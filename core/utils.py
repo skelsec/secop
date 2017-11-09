@@ -5,6 +5,16 @@ from itertools import groupby
 import json
 import datetime
 
+def h2bin(x):
+	data = x.replace(' ', '').replace('\n', '').replace('\t', '').replace('\r', '')
+	return bytearray.fromhex(data)
+
+def hexdump(s):
+	for b in range(0, len(s), 16):
+		lin = [c for c in s[b : b + 16]]
+		hxdat = ' '.join('%02X' % c for c in lin)
+		pdat = ''.join(chr(c) if 32 <= c <= 126 else '.' for c in lin)
+		return '  %04x: %-48s %s' % (b, hxdat, pdat)
 
 def execute(cmd, yield_output = True, supress_exitcode = True):
 	popen = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True, shell=False)

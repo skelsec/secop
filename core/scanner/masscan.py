@@ -84,7 +84,14 @@ class Masscan():
 			scan_a = Scan()
 			scan_a.load_from_file(temp_xmlout.name)
 			for host in scan_a.hosts:
-				target.query.filter_by(scanner_id = self.scanobj.id).filter_by(ip = str(host.addresses[0])).update(dict(rdns = str(host.hostnames[0])))
+				if len(host.addresses) == 0:
+					continue
+				
+				rdns = 'N/A'
+				if len(host.hostnames) > 0:
+					rdns = host.hostnames[0]
+					
+				target.query.filter_by(scanner_id = self.scanobj.id).filter_by(ip = str(host.addresses[0])).update(dict(rdns = str(rdns)))
 				db.session.commit()
 				
 			return cmddata
