@@ -1,5 +1,4 @@
 import multiprocessing
-import traceback
 import queue
 import threading
 import json
@@ -17,10 +16,10 @@ class WorkerCommand(enum.Enum):
 	TEST = 1
 
 class Vulnscan():
-	def __init__(self, project, vulns, procCnt = 1, threadCnt = 1):
+	def __init__(self, project, vulns, vulnargs, procCnt = 1, threadCnt = 1):
 		self.project     = project
 		self.vulns       = vulns
-		self.targetPorts = Ports()
+		self.vulnargs    = vulnargs
 		self.procCnt     = procCnt
 		self.threadCnt   = threadCnt
 		self.stopEvent   = multiprocessing.Event()
@@ -51,11 +50,10 @@ class Vulnscan():
 		app.logger.debug('VULNSCAN polling database for targets and starting scanning')
 		for vuln in self.vulns:
 			ports = Ports(vuln.plugindef.triggerPorts)
-			print(ports.ports)
 			for scan in self.project.scans.all():
 				for t in scan.targets.filter(target.port.in_(ports.ports)).filter(target.port_status == PortStatus.OPEN).all():
 					vulnclass = type(vuln)
-					vt = VulnscanTask(t, vulnclass(), WorkerCommand.TEST)
+					vt = VulnscanTask(t, vulnclass(), WorkerCommand.TEST, args = self.vulnargs)
 					self.inQ.put(vt)
 					
 		app.logger.debug('VULNSCAN waiting for workers to finish...')
@@ -77,10 +75,11 @@ class LogEntry():
 	
 	
 class VulnscanTask():
-	def __init__(self, target = None, vuln = None, workerCmd = None):
+	def __init__(self, target = None, vuln = None, workerCmd = None, args = None):
 		self.target    = target
 		self.vuln      = vuln
 		self.workerCmd = workerCmd
+		self.vulnargs  = args
 
 class VulnscanWorker(multiprocessing.Process):
 	def __init__(self, inQ, outQ, stopEvent, threadCnt = 1):
@@ -106,14 +105,13 @@ class VulnscanWorker(multiprocessing.Process):
 			self.log(logging.INFO, 'Starting up...')
 			self.setup()
 
-			
 			for t in self.threads:
 				t.start()
 
 			for t in self.threads:
 				t.join()
 		except Exception as e:
-			print(str(e))
+			self.log(logging.WARNING, 'Worker exception! Terminating! Reason: %s' % (str(e),))
 			
 	def work(self):
 		while not self.stopEvent.is_set():
@@ -128,6 +126,7 @@ class VulnscanWorker(multiprocessing.Process):
 				
 				elif vt.workerCmd == WorkerCommand.TEST:
 					vt.vuln.target = vt.target
+					vt.vuln.args   = vt.vulnargs
 					vt.vuln.test()
 					self.outQ.put(vt)
 				else:
@@ -183,7 +182,6 @@ class VulnscanReporter(threading.Thread):
 					self.log(logging.INFO, 'Unknown object landed in the outQ! Type is: %s' % (type(vt),))
 			except Exception as e:
 				self.log(logging.INFO, str(e))
-				traceback.print_exc()
 				break
 				
 		self.log(logging.INFO, 'Stopping.')
@@ -198,7 +196,8 @@ class VulnscanReporter(threading.Thread):
 		t = vulnTable(vt.target, vt.vuln)
 		db.session.add(t)
 		db.session.commit()
-		
+	
+
 if __name__ == '__main__':
 	from ..services.SMB.info.SMB001 import SMB001
 	
@@ -211,4 +210,3 @@ if __name__ == '__main__':
 	vs = Vulnscan(p,[v])
 	vs.scan()
 	print('Done!')
-		

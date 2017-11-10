@@ -18,14 +18,23 @@ class FTP001PluginDef():
 		self.resolution       = ''
 
 class FTP001():
-	def __init__(self, target = None, timeout = 1):
+	"""Tests for Anonymous FTP access
+	
+	Args:
+        target (target, optional): The target specification object. Type: either 'target' or 'DummyTarget'. Defaults to None.
+        args   (:obj:`dict`, optional): The second parameter. Defaults to None.
+			Uses the following arguemt parameters:
+				self.args['socket']['timeout']   To specify the timeout
+	"""
+	
+	def __init__(self, target = None, args = None):
+		self.args            = args
 		self.plugindef       = FTP001PluginDef()
 		self.target          = target
 		self.testresult      = TestResult.NOTSTARTED
 		self.error_reason    = None
 		self.tested_at       = None
-		#socket parameters
-		self.soc_timeout     = timeout
+
 		
 	def test(self):
 		self.testresult = TestResult.STARTED
@@ -33,7 +42,7 @@ class FTP001():
 		ip, port = self.target.getaddr()
 		try:
 			ftp = ftplib.FTP()
-			ftp.connect(ip, port, timeout= self.soc_timeout)
+			ftp.connect(ip, port, timeout= self.args['socket']['timeout'])
 			ftp.login()               # user anonymous, passwd anonymous@
 			self.testresult = TestResult.VULNERABLE
 			
@@ -53,7 +62,7 @@ class FTP001():
 		t['testresult']      = self.testresult
 		t['error_reason']    = self.error_reason
 		t['tested_at']       = self.tested_at
-		t['soc_timeout']     = self.soc_timeout
+		t['args']     = self.args
 		return t
 		
 		
@@ -68,8 +77,12 @@ if __name__ == '__main__':
 	
 	args = parser.parse_args()
 	
+	vuln_args = {}
+	vuln_args['socket'] = {}
+	vuln_args['socket']['timeout'] = args.timeout
+	
 	t = DummyTarget(args.ip,args.port)
 	
-	vuln = FTP001(t, timeout =  args.timeout)
+	vuln = FTP001(t, args =  vuln_args)
 	vuln.test()
 	print(vuln.toJSON())

@@ -18,15 +18,14 @@ class SMB001PluginDef():
 		self.resolution       = ''
 
 class SMB001():
-	def __init__(self, target = None, timeout = 1):
+	def __init__(self, target = None, args = {'socket':{'timeout':1}}):
 		self.plugindef       = SMB001PluginDef()
 		self.target          = target
 		self.testresult      = TestResult.NOTSTARTED
 		self.error_reason    = None
 		self.tested_at       = None
-		#socket parameters
-		self.soc_timeout     = timeout
-		#test parameters
+		self.args            = args
+
 		self.SMBDomain       = None
 		self.SMBHostname     = None
 		self.SMBSigning      = None
@@ -38,12 +37,12 @@ class SMB001():
 		self.tested_at  = datetime.utcnow()
 		try:
 			with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as soc:
-				soc.settimeout(self.soc_timeout)
+				soc.settimeout(self.args['socket']['timeout'])
 				soc.connect(self.target.getaddr())
 				self.SMBHostname, self.SMBDomain = DomainGrab(soc)
 				
 			with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as soc:
-				soc.settimeout(self.soc_timeout)
+				soc.settimeout(self.args['socket']['timeout'])
 				soc.connect(self.target.getaddr())
 				self.SMBSigning, self.SMBOsVersion, self.SMBLanManClient = SmbFinger(soc)
 			
@@ -62,7 +61,7 @@ class SMB001():
 		t['testresult']      = self.testresult
 		t['error_reason']    = self.error_reason
 		t['tested_at']       = self.tested_at
-		t['soc_timeout']     = self.soc_timeout
+		t['args']            = self.args
 		t['SMBDomain']       = self.SMBDomain
 		t['SMBHostname']     = self.SMBHostname
 		t['SMBSigning']      = self.SMBSigning

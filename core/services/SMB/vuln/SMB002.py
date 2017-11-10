@@ -3,7 +3,6 @@
 import json
 from datetime import datetime
 from impacket import smb, nt_errors
-from impacket.uuid import uuidtup_to_bin
 import struct
 import sys
 
@@ -11,21 +10,7 @@ from ....utils import TestResult, UniversalEncoder
 from ..smbutils import DomainGrab, SmbFinger
 from ..mysmb import MYSMB
 
-NDR64Syntax = ('71710533-BEBA-4937-8319-B5DBEF9CCC36', '1.0')
 
-MSRPC_UUID_BROWSER  = uuidtup_to_bin(('6BFFD098-A112-3610-9833-012892020162','0.0'))
-MSRPC_UUID_SPOOLSS  = uuidtup_to_bin(('12345678-1234-ABCD-EF00-0123456789AB','1.0'))
-MSRPC_UUID_NETLOGON = uuidtup_to_bin(('12345678-1234-ABCD-EF00-01234567CFFB','1.0'))
-MSRPC_UUID_LSARPC   = uuidtup_to_bin(('12345778-1234-ABCD-EF00-0123456789AB','0.0'))
-MSRPC_UUID_SAMR     = uuidtup_to_bin(('12345778-1234-ABCD-EF00-0123456789AC','1.0'))
-
-pipes = {
-	'browser'  : MSRPC_UUID_BROWSER,
-	'spoolss'  : MSRPC_UUID_SPOOLSS,
-	'netlogon' : MSRPC_UUID_NETLOGON,
-	'lsarpc'   : MSRPC_UUID_LSARPC,
-	'samr'     : MSRPC_UUID_SAMR,
-}
 
 class SMB002PluginDef():
 	def __init__(self):
@@ -40,7 +25,7 @@ class SMB002PluginDef():
 		self.resolution       = ''
 
 class SMB002():
-	def __init__(self, target = None, timeout = 1, args = None):
+	def __init__(self, target = None, args = None):
 		self.plugindef       = SMB002PluginDef()
 		self.args            = args
 		self.target          = target
@@ -48,7 +33,6 @@ class SMB002():
 		self.error_reason    = None
 		self.tested_at       = None
 		#socket parameters
-		self.soc_timeout     = timeout
 		#test parameters
 		self.SMBDomain       = None
 		self.SMBHostname     = None
@@ -102,7 +86,6 @@ class SMB002():
 		t['testresult']      = self.testresult
 		t['error_reason']    = self.error_reason
 		t['tested_at']       = self.tested_at
-		t['soc_timeout']     = self.soc_timeout
 
 		return t
 		

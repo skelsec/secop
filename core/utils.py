@@ -5,6 +5,9 @@ from itertools import groupby
 import json
 import datetime
 
+def flatten(i, separator):
+	return str(i).replace('\r','\\r').replace('\n','\\n').replace(separator,' ')
+
 def h2bin(x):
 	data = x.replace(' ', '').replace('\n', '').replace('\t', '').replace('\r', '')
 	return bytearray.fromhex(data)
@@ -136,6 +139,18 @@ class Ports():
 			el = lst[t]
 			t += l
 			yield (el, el+l)
+			
+	def toJSON(self):
+		return json.dumps(self.toDict())
+		
+	def toDict(self, verbose = False):
+		temp = {}
+		temp['portdef']            = self.portdef
+		temp['port_type']          = self.port_type
+		if verbose:
+			temp['ports']        = self.ports
+		
+		return temp
 	
 class Targets():
 	def __init__(self, targetdef = None):
@@ -169,15 +184,28 @@ class Targets():
 					raise e
 				self.targets.append(ipaddress.ip_address(tp))
 		
-		self.targetdef = self.targetdef.replace(',','')
+		self.targetdef = ','.join([str(x) for x in self.targets])
+		
+	def toJSON(self):
+		return json.dumps(self.toDict())
+		
+	def toDict(self, verbose = False):
+		temp = {}
+		temp['targetdef']            = self.targetdef
+		if verbose:
+			temp['targets']        = self.targets
+		
+		return temp
 		
 
 class UniversalEncoder(json.JSONEncoder):
 	def default(self, obj):
 		if isinstance(obj, datetime.datetime):
 			return obj.isoformat()
-		elif isinstance(obj, enum.Enum):
+		elif isinstance(obj, (enum.Enum,ipaddress.IPv4Network,ipaddress.IPv6Network,ipaddress.IPv4Address,ipaddress.IPv6Address)):
 			return str(obj)
+		elif isinstance(obj, (Targets,Ports,DummyTarget)):
+			return obj.toJSON()
 		else:
 			return json.JSONEncoder.default(self, obj)
 		

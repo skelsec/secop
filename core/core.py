@@ -25,6 +25,30 @@ def create_project(description = ''):
 	db.session.add(proj)
 	db.session.commit()
 	return proj
+	
+def get_all_projects():
+	for proj in project.query.all():
+		yield proj
+	
+def get_project(project_id):
+	return project.query.get(project_id)
+	
+def get_portscanner(scan_id):
+	return portscanner.query.get(scan_id)
+
+def get_portscanner_for_project(project_id):
+	for ps in get_project(project_id).scans.all():
+		yield ps
+
+def get_target_for_portscanner(scan_id):
+	for t in get_portscanner(scan_id).targets.all():
+		yield t
+		
+def get_target_for_project(project_id):
+	for ps in get_portscanner_for_project(project_id):
+		for t in get_target_for_portscanner(ps.id):
+			yield t
+	
 
 def create_scan(proj, scanner_type, targets, ports, args = None):
 	scantype = None

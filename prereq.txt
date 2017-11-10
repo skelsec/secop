@@ -4,3 +4,5 @@ flask
 flask-sqlalchemy
 requests
 pyldap (python-ldap)
+selenium
+phantomjs
